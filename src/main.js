@@ -126,8 +126,6 @@ let doofinderClient = new doofinder.Client(
 );
 
 let toHitResult = function(doofinderResult){
-  console.log("doofinderResult");
-  console.log(doofinderResult);
   let res = {
     "name": doofinderResult.title,
     "description": doofinderResult.description,
@@ -176,33 +174,40 @@ let toHitResult = function(doofinderResult){
   return res;
 }
 
+
+function toBrand(facets){
+  let values = facets.brand.terms.buckets;
+  let result = {};
+  for (let x=0; x<values.length; x++)
+  {
+    let value = values[x];
+    result[value.key] = value.doc_count;
+  }
+  return result;
+}
+
 let formatResult = function(doofinderResult){
+  // console.log(doofinderResult);
   let results = doofinderResult.results;
   if (!results)
   {
     return {};
   }
+
+  let allResults = results.map(result => toHitResult(result));
+
   return {
     results: [
       {
-        "hits": [toHitResult(results[0]), toHitResult(results[1]), toHitResult(results[2])],
-        "nbHits": 848,
+        "hits": allResults,
+        "nbHits": 3,
         "page": 0,
-        "nbPages": 43,
-        "hitsPerPage": 20,
+        "nbPages": 2,
+        "hitsPerPage": 6,
         "facets": {
-          "brand": {
-            "Incipio": 424,
-            "Samsung": 272,
-            "kate spade new york": 152
-          }
+          "brand": toBrand(doofinderResult.facets)
         },
-        "exhaustiveFacetsCount": true,
-        "exhaustiveNbHits": true,
-        "query": "g",
         "params": "query=g&maxValuesPerFacet=10&highlightPreTag=__ais-highlight__&highlightPostTag=__%2Fais-highlight__&page=0&facets=%5B%22brand%22%5D&tagFilters=&facetFilters=%5B%5B%22brand%3Akate%20spade%20new%20york%22%2C%22brand%3AIncipio%22%2C%22brand%3ASamsung%22%5D%5D",
-        "index": "demo_ecommerce",
-        "processingTimeMS": 1
       }
     ]
   }
@@ -211,7 +216,7 @@ let formatResult = function(doofinderResult){
 function SearchAndFormat(searchQuery)
 {
   return new Promise((resolve, reject) => {
-    doofinderClient.search(searchQuery, function(error, result){
+    doofinderClient.search(searchQuery, function(_, result){
       resolve(formatResult(result));
     });
   });
@@ -219,18 +224,14 @@ function SearchAndFormat(searchQuery)
 
 
 const customSearchClient = {
-    search(requests) {
-      let searchQuery = requests[0].params.query
-      var search_res = searchClient.search(requests);
-
-      return SearchAndFormat(searchQuery);
-    },
-    searchForFacetValues(requests) {
-      return searchClient.searchForFacetValues(requests);
-      console.log("search for facet values here:");
-      return res;
-    }
-  };
+  search(requests) {
+    let searchQuery = requests[0].params.query
+    return SearchAndFormat(searchQuery);
+  },
+  searchForFacetValues(requests) {
+    return searchClient.searchForFacetValues(requests);
+  }
+};
 
 const search = instantsearch({
     indexName: 'demo_ecommerce',
