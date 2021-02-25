@@ -1,0 +1,28 @@
+{
+  "name": "vue-instantsearch-doofinder",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "algoliasearch": "^3.33.0",
+    "browser": "^0.2.6",
+    "doofinder": "^5.3.1",
+    "instantsearch.css": "7.3.1",
+    "instantsearch.js": "^4.15.0",
+    "vue": "2.6.10"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "3.6.0",
+    "@vue/cli-plugin-eslint": "3.6.0",
+    "@vue/cli-service": "3.6.0",
+    "@vue/eslint-config-prettier": "4.0.1",
+    "babel-eslint": "10.0.1",
+    "eslint": "5.9.0",
+    "eslint-plugin-vue": "5.2.2",
+    "vue-template-compiler": "2.6.10"
+  }
+}
