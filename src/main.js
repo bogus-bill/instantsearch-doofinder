@@ -1,6 +1,6 @@
 /* global instantsearch algoliasearch */
 
-const result = {
+const jsonResult = {
 	"results": [
 		{
 			"hits": [
@@ -110,17 +110,13 @@ const searchClient = algoliasearch(
   'aadef574be1f9252bb48d4ea09b5cfe5'
 );
 
-console.log("searchClient");
-console.log(searchClient.search);
-
-
-const res = new Promise((resolve, reject) => {
-  resolve(result);
+const promiseResponse = new Promise((resolve, reject) => {
+  resolve(jsonResult);
 });
 
 import doofinder from 'doofinder';
 
-let client = new doofinder.Client(
+let doofinderClient = new doofinder.Client(
   "97246945c88535d0dbaf859485503f52",
   {
     address: 'eu1-search.doofinder.com',
@@ -129,32 +125,111 @@ let client = new doofinder.Client(
   }
 );
 
-// let controller = new doofinder.Controller(client);
+let toHitResult = function(doofinderResult){
+  console.log("doofinderResult");
+  console.log(doofinderResult);
+  let res = {
+    "name": doofinderResult.title,
+    "description": doofinderResult.description,
+    "brand": doofinderResult.brand,
+    "categories": doofinderResult.categories,
+    "price": doofinderResult.price,
+    "image": doofinderResult.image_link,
+    "popularity": 21218,
+    "_highlightResult": {
+      "name": {
+        "value": doofinderResult.title,
+        "matchLevel": "full",
+        "fullyHighlighted": false,
+        "matchedWords": [
+          "g"
+        ]
+      },
+      "description": {
+        "value": "Enjoy the function of a tablet in a slim, easy-to-handle design with this Samsung __ais-highlight__G__/ais-highlight__alaxy S7 edge. The curved edge-to-edge display offers impressive viewing, and the durable exterior is both dust- and water-resistant without needing a case. This Samsung __ais-highlight__G__/ais-highlight__alaxy S7 edge runs on Android 6.0 for powerful support of all your apps.",
+        "matchLevel": "full",
+        "fullyHighlighted": false,
+        "matchedWords": [
+          "g"
+        ]
+      },
+      "brand": {
+        "value": "Samsung",
+        "matchLevel": "none",
+        "matchedWords": []
+      },
+      "categories": [
+        {
+          "value": "Cell Phones",
+          "matchLevel": "none",
+          "matchedWords": []
+        },
+        {
+          "value": "All Cell Phones with Plans",
+          "matchLevel": "none",
+          "matchedWords": []
+        }
+      ]
+    }
+  }
 
-console.log(client);
+  return res;
+}
+
+let formatResult = function(doofinderResult){
+  let results = doofinderResult.results;
+  if (!results)
+  {
+    return {};
+  }
+  return {
+    results: [
+      {
+        "hits": [toHitResult(results[0]), toHitResult(results[1]), toHitResult(results[2])],
+        "nbHits": 848,
+        "page": 0,
+        "nbPages": 43,
+        "hitsPerPage": 20,
+        "facets": {
+          "brand": {
+            "Incipio": 424,
+            "Samsung": 272,
+            "kate spade new york": 152
+          }
+        },
+        "exhaustiveFacetsCount": true,
+        "exhaustiveNbHits": true,
+        "query": "g",
+        "params": "query=g&maxValuesPerFacet=10&highlightPreTag=__ais-highlight__&highlightPostTag=__%2Fais-highlight__&page=0&facets=%5B%22brand%22%5D&tagFilters=&facetFilters=%5B%5B%22brand%3Akate%20spade%20new%20york%22%2C%22brand%3AIncipio%22%2C%22brand%3ASamsung%22%5D%5D",
+        "index": "demo_ecommerce",
+        "processingTimeMS": 1
+      }
+    ]
+  }
+}
+
+function SearchAndFormat(searchQuery)
+{
+  return new Promise((resolve, reject) => {
+    doofinderClient.search(searchQuery, function(error, result){
+      resolve(formatResult(result));
+    });
+  });
+}
+
 
 const customSearchClient = {
     search(requests) {
-      // console.log("is the request I GOT");
-      // console.log(requests);
-      // return result;
-      var result = searchClient.search(requests);
-      console.log("normal search here");
-      return result;
+      let searchQuery = requests[0].params.query
+      var search_res = searchClient.search(requests);
+
+      return SearchAndFormat(searchQuery);
     },
     searchForFacetValues(requests) {
       return searchClient.searchForFacetValues(requests);
       console.log("search for facet values here:");
-      // console.log(facetName, facetQuery);
       return res;
     }
-    //   return fetch('http://localhost:3000/search', {
-    //     method: 'post',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({ requests }),
-    //   }).then(res => res.json());
   };
 
 const search = instantsearch({
@@ -164,7 +239,7 @@ const search = instantsearch({
       if (helper.state.query.length < 3) {
         return; // no search if less than 2 character
       }
-      helper.search( );
+      helper.search();
     }
   });
 
@@ -180,14 +255,21 @@ const search = instantsearch({
       attribute: 'brand'
     }),
     instantsearch.widgets.hits({
-      container: "#hits",
+      container: '#hits',
       templates: {
         item: `
-          <div class="hit-name">
-            {{#helpers.highlight}}{ "attribute": "name" }{{/helpers.highlight}}
+          <div>
+            <img src="{{image}}" style="max-width:150px; max-height=150px" align="left" alt="{{name}}" />
+            <div class="hit-name">
+              {{#helpers.highlight}}{ "attribute": "name" }{{/helpers.highlight}}
+            </div>
+            <div class="hit-description">
+              {{#helpers.highlight}}{ "attribute": "description" }{{/helpers.highlight}}
+            </div>
+            <div class="hit-price">\${{price}}</div>
           </div>
-        `
-      }
+        `,
+      },
     }),
     instantsearch.widgets.pagination({
       container: '#pagination',
